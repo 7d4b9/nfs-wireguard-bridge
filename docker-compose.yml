@@ -1,23 +1,18 @@
-networks:
-  openvpn-bridge:
-   driver: bridge
-  nfs-bridge:
-   driver: bridge
 services:
-  nfs-server-openvpn-client:
-    restart: unless-stopped
-    image: ${IMAGE:-dbndev/nfs-openvpn-bridge}
-    container_name: openvpn-nfs-server
+  server:
+    build: .
+    container_name: nfs-openvpn
     privileged: true
     cap_add:
       - NET_ADMIN
+    environment:
+      - OVPN_REMOTE_ADDR=davidberichon.pro.dns-orange.fr
+      - OVPN_PUBLIC_PORT=11044
+    network_mode: bridge
     volumes:
       - /workspaces:/exports/workspaces:rw
       - /runner:/exports/runner:rw
-      - ./client.ovpn:/vpn/client.ovpn:ro
-    networks:
-      - default
-    # ports:
-    #   - "2049:2049/tcp"
-    #   - "2049:2049/udp"
-      
+      - ./pki:/pki:rw
+    ports:
+      - "1194:11944/udp"
+    restart: unless-stopped

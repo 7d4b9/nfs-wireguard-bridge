@@ -7,13 +7,15 @@ PWD = $(CURDIR)
 server-upgrade: build server-down server-up
 .PHONY: server-upgrade
 
-server-up: $(SSH_PUBLIC_KEY)
-# 	@echo Launching ssh server
-# 	@-docker compose rm -f -s server
-# 	@docker compose up -d server
-# 	@until nc -z localhost 22022 ; do echo waiting server ; sleep 1 ; done
-# 	@echo server is running.
-# 	@echo use "make server-logs" or "make server-logs-follow" to view server logs
+NFS_OPENVPN_SERVER_PORT := 11944
+
+server-up: 
+	@echo Launching ssh server
+	@-docker compose rm -f -s server
+	@docker compose up -d server
+	@until nc -z localhost $(NFS_OPENVPN_SERVER_PORT) ; do echo waiting server ; sleep 1 ; done
+	@echo server is running.
+	@echo use "make server-logs" or "make server-logs-follow" to view server logs
 .PHONY: server-up
 
 # server-logs:
@@ -56,33 +58,17 @@ server-up: $(SSH_PUBLIC_KEY)
 # 	@docker compose exec -it consumer bash
 # .PHONY: client-sh
 
-# SSH_PRIVATE_KEY ?= $(CURDIR)/id_rsa
-CLIENT_OVPN ?= $(CURDIR)/client.ovpn
+build:
+	@echo Building image:
+	@docker build -t $(IMAGE) .
+.PHONY: build
 
-# SSH_KEYS = $(SSH_PRIVATE_KEY) $(SSH_PUBLIC_KEY)
+push:
+	@echo pushing image:
+	@docker push $(IMAGE)
+.PHONY: push
 
-# $(SSH_KEYS): generate-ssh-keys
-
-# generate-ssh-keys: ssh-keys-rm 
-# 	@echo Generating ssh keys
-# 	@ssh-keygen -t rsa -b 4096 -f $(SSH_PRIVATE_KEY) -q -N ""
-# .PHONY: generate-ssh-keys
-
-# build:
-# 	@echo Building image:
-# 	@docker build -t $(IMAGE) .
-# .PHONY: build
-
-# push:
-# 	@echo pushing image:
-# 	@docker push $(IMAGE)
-# .PHONY: push
-
-# pull:
-# 	@echo pulling image:
-# 	@docker pull $(IMAGE)
-# .PHONY: pull
-
-# ssh-keys-rm:
-# 	@rm -rf $(SSH_KEYS)
-# .PHONY: ssh-keys-clean
+pull:
+	@echo pulling image:
+	@docker pull $(IMAGE)
+.PHONY: pull

@@ -1,22 +1,28 @@
 FROM debian:stable
 
+ENV DEBIAN_FRONTEND=noninteractive
+
 RUN apt-get update && apt-get install -y \
     openvpn \
-    nfs-kernel-server \
+    easy-rsa \
+    iptables \
     iproute2 \
-    iputils-ping \
+    nfs-kernel-server \
     procps \
     && apt-get clean
 
-# Répertoires de configuration
-RUN mkdir -p /vpn /exports
+# Dossiers
+RUN mkdir -p /etc/openvpn/server \
+    /pki \
+    /exports/workspaces \
+    /exports/runner
 
-# Notre script entrypoint
+# Scripts
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-# # Ports NFSv4 uniquement (un seul port !)
-# EXPOSE 2049/tcp
-# EXPOSE 2049/udp
+EXPOSE 1194/udp
+EXPOSE 2049/tcp
+EXPOSE 2049/udp
 
 ENTRYPOINT ["/entrypoint.sh"]
