@@ -1,0 +1,23 @@
+networks:
+  openvpn-bridge:
+   driver: bridge
+  nfs-bridge:
+   driver: bridge
+services:
+  nfs-server-openvpn-client:
+    restart: unless-stopped
+    image: ${IMAGE:-dbndev/nfs-openvpn-bridge}
+    container_name: openvpn-nfs-server
+    privileged: true
+    cap_add:
+      - NET_ADMIN
+    volumes:
+      - /workspaces:/exports/workspaces:rw
+      - /runner:/exports/runner:rw
+      - ./client.ovpn:/vpn/client.ovpn:ro
+    networks:
+      - default
+    # ports:
+    #   - "2049:2049/tcp"
+    #   - "2049:2049/udp"
+      
