@@ -33,7 +33,7 @@ server-sh:
 
 server-down:
 	@echo Removing ssh server container
-	@docker compose down server
+	@docker compose down server || docker compose rm -f -s server
 .PHONY: server-down
 
 build:

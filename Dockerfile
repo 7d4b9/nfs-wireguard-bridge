@@ -24,9 +24,12 @@ ENV HOME=/home/${non_root_user}
 
 RUN mkdir -p /etc/wireguard /workspaces /runner /state
 
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY nfs-start.sh /usr/local/bin/nfs-start.sh
+COPY wg-start.sh /usr/local/bin/wg-start.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
 
 EXPOSE 51820/udp
 
-ENTRYPOINT ["/entrypoint.sh"]  
+ENTRYPOINT ["entrypoint.sh"]  
