@@ -11,17 +11,9 @@ services:
       - /workspaces:/workspaces:rw
       - /runner:/runner:rw
       - ./state:/state:rw
-      - video-nas:/video-nas:rw
     ports:
       - "51820:51820/udp"
     restart: unless-stopped
     environment:
-      - NFS_WIREGUARD_SERVER_PORT=41414
-      - NFS_WIREGUARD_SERVER_HOST=davidberichon.pro.dns-orange.fr
-volumes:
-  video-nas:
-    driver: local
-    driver_opts:
-      type: "nfs"
-      o: "addr=nas.local,rw,noatime,rsize=8192,wsize=8192,tcp,timeo=14,nfsvers=4"
-      device: ":/volume1/video"
+      - NFS_WIREGUARD_SERVER_PORT=${NFS_WIREGUARD_SERVER_PORT:-51820}
+      - NFS_WIREGUARD_SERVER_HOST=${NFS_WIREGUARD_SERVER_HOST:-davidberichon.pro.dns-orange.fr}

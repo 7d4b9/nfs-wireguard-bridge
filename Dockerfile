@@ -32,4 +32,4 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 
 EXPOSE 51820/udp
 
-ENTRYPOINT ["entrypoint.sh"]  
+ENTRYPOINT ["entrypoint.sh"]   
