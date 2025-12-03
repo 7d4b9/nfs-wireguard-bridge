@@ -16,6 +16,8 @@ services:
       - "51821:51820/udp"
     restart: unless-stopped
     environment:
+      - NFS_BACKEND=${NFS_BACKEND}
+      - CODESPACES=${CODESPACES}
       - NFS_WIREGUARD_SERVER_PORT=${NFS_WIREGUARD_SERVER_PORT:-51820}
       - NFS_WIREGUARD_SERVER_HOST=${NFS_WIREGUARD_SERVER_HOST:-bbrodriguez.vegito.app}
 

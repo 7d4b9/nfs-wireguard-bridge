@@ -57,6 +57,16 @@ COPY wg-show.sh             /usr/local/bin/
 COPY nfs-start.sh           /usr/local/bin/
 COPY entrypoint.sh          /usr/local/bin/
 
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY wg-start.sh /usr/local/bin/wg-start.sh
+
+# --- Ganesha configs for GitHub Codespaces ---
+COPY nfs/ganesha/ganesha.conf /etc/ganesha/ganesha.conf
+
+# --- NFS scripts ---
+COPY nfs/nfs-start.sh         /usr/local/bin/
+COPY nfs/nfs-start-ganesha.sh /usr/local/bin/
+
 RUN sudo chmod +x /usr/local/bin/*.sh
 
 EXPOSE 51820/udp
