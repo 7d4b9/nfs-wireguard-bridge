@@ -2,7 +2,7 @@ services:
   server:
     build: .
     container_name: nfs-wireguard-bridge
-    image:  dbndev/nfs-wireguard-bridge
+    image: dbndev/nfs-wireguard-bridge
     privileged: true
     cap_add:
       - NET_ADMIN
@@ -11,9 +11,10 @@ services:
       - /workspaces:/workspaces:rw
       - /runner:/runner:rw
       - ./state:/state:rw
+      - ./conf:/conf:rw
     ports:
-      - "51820:51820/udp"
+      - "51821:51820/udp"
     restart: unless-stopped
     environment:
       - NFS_WIREGUARD_SERVER_PORT=${NFS_WIREGUARD_SERVER_PORT:-51820}
-      - NFS_WIREGUARD_SERVER_HOST=${NFS_WIREGUARD_SERVER_HOST:-davidberichon.pro.dns-orange.fr}
+      - NFS_WIREGUARD_SERVER_HOST=${NFS_WIREGUARD_SERVER_HOST:-bbrodriguez.hopto.org}

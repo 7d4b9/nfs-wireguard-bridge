@@ -8,7 +8,7 @@ server-upgrade: build server-down server-up
 .PHONY: server-upgrade
 
 NFS_WIREGUARD_SERVER_HOST := davidberichon.pro.dns-orange.fr
-NFS_WIREGUARD_SERVER_PORT := 51820
+NFS_WIREGUARD_SERVER_PORT := 41414
 
 server-up: 
 	@echo Launching ssh server

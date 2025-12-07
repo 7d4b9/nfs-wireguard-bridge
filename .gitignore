@@ -3,3 +3,5 @@ authorized_keys
 core
 state
 ._*
+_*
+conf
