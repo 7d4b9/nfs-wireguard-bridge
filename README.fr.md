@@ -218,6 +218,264 @@ Use cases: dev workspaces, Docker clusters, file servers, or remote development.
 
 ---
 
+# VPN Relay – Relai WireGuard multi‑site DevOps
+
+**Relai VPN flexible, multi‑tunnel, pensé pour l’interconnexion sécurisée et automatisée de réseaux distants, DMZ, LAN, cloud, et environnements hybrides.**
+
+---
+
+## Pourquoi dockeriser un relai VPN ?
+
+### **Avantages concrets de la containerisation WireGuard pour les équipes DevOps**
+
+- **Portabilité extrême** : déploiement identique sur Linux, VM, cloud, cluster, laptop, CI/CD…
+- **Reproductibilité** : version figée de WireGuard, scripts, iptables, NAT… tout dans l’image
+- **Automatisation** : orchestration possible (compose, swarm, k8s, systemd), provisioning “as code”, intégration avec GitOps/CI
+- **Idempotence & maintenance** : redémarrage sans effets de bord, stateless, rolling-update facile
+- **Sécurité** : surface réduite, gestion stricte des permissions (volumes, réseaux, users, capabilities…)
+- **Audit & rollback** : logs, traces, rollbacks sur version d’image
+- **Facilité de migration** : une stack Dev ou Prod s’exporte d’un cloud à l’autre sans rien casser
+- **Isolation légère** : le container contrôle l’interface kernel, mais ne pollue pas l’OS hôte
+- **Multi‑rôle** : routeur, relai, bridge, DMZ, mesh, failover, NAT multi‑site
+
+### **Pourquoi l’industrie DevOps fonctionne déjà ainsi ?**
+- La **containerisation d’infra réseau** (DNS, reverse-proxy, VPN, mesh, loadbalancer, firewall, monitoring…) est déjà **le standard** pour tous les contextes “as code”.
+- WireGuard, comme OpenVPN, StrongSwan ou FRR, est très utilisé sous forme de conteneur pour la portabilité, l’automatisation, la CI/CD, les environnements cloud et hybride.
+- Les équipes DevOps déploient et gèrent leur “backbone réseau” de la même façon que leur infra applicative, grâce à Docker/K8s/Nomad/Compose/Terraform, etc.
+
+---
+
+## Cas d’usage typiques (DevOps & IT moderne)
+
+- **Relai VPN entre plusieurs sites, datacenters ou clouds**
+- **Chained VPN** : mobile → point d’entrée cloud/fibre → backbone entreprise
+- **DMZ gateway** pour isoler une prod publique de l’admin interne
+- **Automatisation CI/CD** : tunnels éphémères pour tests, accès sécurisé à des ressources privées
+- **Failover et Redondance** : mesh multi‑site pour SRE, résilience disaster recovery
+- **Bridge LAN ↔ cloud** : accès sécurisé à des services internes on-prem depuis le cloud ou un runner CI
+- **Réseau multi‑tenant**, isolation de prod/staging/dev par sous-réseau
+
+---
+
+## Démarrage rapide
+
+```yaml
+services:
+  vpn-relay:
+    image: dbndev/vpn-relay:latest
+    container_name: vpn-relay
+    cap_add:
+      - NET_ADMIN
+    privileged: true
+    network_mode: bridge
+    ports:
+      - "51820:51820/udp"
+      - "51821:51821/udp"
+    volumes:
+      - ./state:/state
+      - ./conf:/conf
+    environment:
+      - WG1_INTERFACE=wg1
+      - WG1_PRIVATE_KEY=...
+      - WG1_PORT=51820
+      - WG1_PEERS=...
+      - WG2_INTERFACE=wg2
+      - WG2_PRIVATE_KEY=...
+      - WG2_PORT=51821
+      - WG2_PEERS=...
+```
+
+- Tous les fichiers de config WireGuard sont stockés dans `/conf` ou `/state`
+- Le container détecte et monte automatiquement les interfaces clientes (multi‑peer)
+- Les règles de NAT/iptables/routage peuvent être customisées/automatisées
+
+---
+
+## Architecture – Schémas d’usage
+
+### 🟦 Multi‑VPN Relay (DevOps chaining, accès cloud)
+
+```mermaid
+flowchart TD
+    A[Runner CI/CD ou Laptop<br/>10.8.0.2]
+    R["vpn-relay (docker)"]
+    C[Site prod<br/>10.9.0.0/24]
+    G[Cloud/DMZ<br/>192.168.99.0/24]
+
+    subgraph VPN1
+      A -- wg1 --> R
+    end
+    subgraph VPN2
+      R -- wg2 --> C
+    end
+    subgraph VPN3
+      R -- wg3 --> G
+    end
+    R -. NAT/MASQ .-> C
+    R -. NAT/MASQ .-> G
+```
+
+### 🟩 DMZ Gateway (isolation accès admin)
+
+```mermaid
+flowchart LR
+    INET[Internet / Dev externe]
+    DMZ["vpn-relay (DMZ, docker)"]
+    LAN["LAN interne (prod, admin)"]
+    SRV[Serveurs critiques, NAS]
+
+    INET -- wg1 --> DMZ
+    DMZ -- wg2 --> LAN
+    LAN --> SRV
+
+    DMZ -. MASQUERADE .-> LAN
+    DMZ -. Règles filtrées .-> SRV
+```
+
+### 🟨 Mesh/Hub pour failover multi‑site
+
+```mermaid
+flowchart LR
+    A[Site A<br/>10.8.0.0/24]
+    H["vpn-relay Hub (docker)"]
+    B[Site B<br/>10.9.0.0/24]
+    C[Cloud/Runner<br/>10.10.0.0/24]
+
+    A -- wg1 --> H
+    B -- wg2 --> H
+    C -- wg3 --> H
+
+    H -- Routage/NAT --> A
+    H -- Routage/NAT --> B
+    H -- Routage/NAT --> C
+```
+
+### 🟫 Double-VPN/bridge multi-homed
+
+#### Scénario : montage NFS distant via VPN imbriqué pour contourner les limitation de 
+
+###### 1)non routage LAN->TUN des routeurs non spécialisés (nécessaire pour un rebond VPN ).
+###### 2)bridage mobile/FAI : en utilisant un rebond VPN.
+
+##### Résumé de chaque étape
+  1.	MacBook prépare un paquet à destination 192.168.50.20 (LAN)
+  2.	Le routage local (via AllowedIPs) envoie ce paquet dans l’interface utunY (VPN1), qui encapsule dans WireGuard (source 10.8.0.4 → 10.8.0.1)
+  3.	Le tunnel VPN1, dont l’endpoint est en fait 10.5.5.3:58120 (adresse du bridge sur VPN2), fait traverser ce paquet à travers le tunnel VPN2 (utunX/10.5.5.2)
+  4.	Le réseau physique (WiFi, 4G, Internet) ne voit que des paquets UDP WireGuard sur 10.5.5.3:58120
+  5.	Archer AX55 reçoit le trafic sur son interface VPN2, le forwarde bêtement à 10.5.5.3 (bridge) — il ne fait pas de routage
+  6.	Bridge reçoit le flux UDP sur 10.5.5.3:58120, décapsule VPN1, traite le trafic sur 10.8.0.1 (multi-homed)
+  7.	Bridge route ou NAT le trafic vers le LAN 192.168.50.x via ses règles locales (iptables ou routage direct)
+  8.	Le retour suit le chemin inverse, encapsulé dans VPN1 puis VPN2 jusqu’au MacBook
+
+```mermaid
+flowchart TD
+    subgraph CLIENT [MacBook Air]
+        direction TB
+        A1["Application
+        (ex: montage NFS)"]
+        A2[Table de routage MacBook]
+        A3["Interface utunY
+        (VPN1, 10.8.0.4)"]
+        A4["Interface utunX
+        (VPN2, 10.5.5.2)"]
+    end
+
+    subgraph PHYSIQUE [Réseau physique / Internet]
+        direction LR
+        P1["Connexion physique
+        (WiFi, 4G, Ethernet...)"]
+    end
+
+    subgraph ARCHER [Routeur Archer AX55]
+        direction TB
+        B1[Serveur WireGuard VPN2
+        10.5.5.1:58120]
+    end
+
+    subgraph BRIDGE ["Bridge/NFS-Server
+    (Docker, multi-homed)"]
+        direction TB
+        C1["Interface utunX (VPN2)
+        10.5.5.3"]
+        C2["Serveur WireGuard VPN1
+        10.8.0.1:58120"]
+        C3["Interface utunY (VPN1)
+        10.8.0.1"]
+        C4[Table de routage / NAT / iptables]
+        C5["LAN
+        192.168.50.0/24
+        (NFS, SMB, ...)"]
+    end
+
+    %% Envois
+    A1 -- "paquet à destination
+    192.168.50.20" --> A2
+    A2 -- "match AllowedIPs
+    192.168.50.0/24
+    → utunY" --> A3
+    A3 -- "paquet WireGuard VPN1
+    (source 10.8.0.4)
+    destination 10.8.0.1" --> A4
+    A4 -- "UDP encapsulé WireGuard
+    vers 10.5.5.3:58120" --> P1
+    P1 -- "UDP encapsulé" --> B1
+    B1 -- "forward (pas de routage)" --> C1
+    C1 -- "décapsulation WireGuard VPN1
+    paquet 10.8.0.4 → 10.8.0.1" --> C2
+    C2 -- "réception WireGuard VPN1" --> C3
+    C3 -- "routage/NAT vers LAN
+    paquet vers 192.168.50.20" --> C4
+    C4 -- "paquet arrive sur LAN" --> C5
+
+    %% Retour
+    C5 -- "réponse du LAN" --> C4
+    C4 -- "NAT/routage
+    vers 10.8.0.4" --> C3
+    C3 -- "encapsulation WireGuard
+    vers 10.8.0.4" --> C2
+    C2 -- "envoi via UDP WireGuard
+    à 10.5.5.2:random" --> C1
+    C1 -- "UDP encapsulé vers 10.5.5.2" --> B1
+    B1 -- "forward (pas de routage)" --> P1
+    P1 -- "UDP encapsulé" --> A4
+    A4 -- "WireGuard VPN1
+    décapsulation" --> A3
+    A3 -- "réponse reçue par app" --> A1
+
+    %% Légende
+    classDef legend fill:#f6f7f8,stroke:#999,stroke-dasharray: 5 5
+    subgraph LEGEND[" "]
+    direction LR
+    L1["utunX = interface WireGuard VPN2 (10.5.5.x)"]
+    L2["utunY = interface WireGuard VPN1 (10.8.0.x)"]
+    end
+    class LEGEND legend;
+```
+
+---
+
+## Bonnes pratiques DevOps
+
+- **Tout dans le code/infra as code** (compose, Makefile, Terraform…)
+- **Automatisation des clés, pairs, NAT, routes** (scripts d’init, hooks, pipelines)
+- **Audit/Logging** via stdout, logs Docker, monitoring sidecar
+- **Sécurité** : rotation régulière des clés, limitation stricte des AllowedIPs, contrôle de l’exposition admin
+- **Idempotence** : redéploiement sans effet de bord, support du rolling-update, gestion propre du cleanup
+- **Observabilité** : tests de connectivité, traces, hooks d’état, healthchecks customisables
+
+---
+
+## Variables d’environnement/support
+
+- `WG1_INTERFACE`, `WG2_INTERFACE`, …
+- `WG1_PRIVATE_KEY`, `WG2_PRIVATE_KEY`, …
+- `WG1_PORT`, `WG2_PORT`, …
+- `WG1_PEERS`, `WG2_PEERS`, …
+- `NAT_RULES` (optionnel)
+- `ROUTE_RULES` (optionnel)
+
+---
+
 ## 📣 Author
 
 David Berichon ([dbndev](https://github.com/dbndev))
