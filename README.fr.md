@@ -491,3 +491,199 @@ Contact me if you want a ready-to-use public image!
 ## 🔗 Licence / License
 
 MIT
+
+[![Docker Hub](https://img.shields.io/docker/pulls/dbndev/nfs-wireguard-bridge)](https://hub.docker.com/r/dbndev/nfs-wireguard-bridge)
+
+# NFS WireGuard Bridge
+
+
+**Serveur NFS sécurisé derrière WireGuard pour exposer vos dossiers locaux à distance, sans compromis sur la sécurité ni la performance.**
+Partagez vos environnements de développement, projets, volumes Docker ou données sensibles entre plusieurs machines, même à travers Internet ou NAT.
+
+---
+
+## Fonctionnalités
+
+- **Serveur NFS v3 ou v4** dans un conteneur dédié
+- **VPN WireGuard** (mode serveur ou client)
+- Pont sécurisé pour tout chemin local, partage NAS ou volume Docker
+- 🔑 Seuls les pairs de confiance (clé privée) peuvent accéder à l’export NFS
+- 🚀 Transferts rapides, faible latence (NFS natif, kernel direct)
+- **Aucun port exposé** sur Internet/WAN
+- 🛡️ Compatible Docker Compose/Swarm
+- Léger, stateless, prêt pour cloud/devbox/lab
+
+---
+
+## Cas d’usage
+
+- Accédez à vos dossiers dev maison/bureau depuis n’importe où (laptop, VM cloud…)
+- Reliez un NAS Synology/TrueNAS/NFS derrière un firewall restrictif
+- Remplacez SMB ou SSHFS lent par du vrai NFS natif
+- Connectez des devcontainers VSCode à votre workstation/NAS distant
+- Base pour runners CI/CD auto-hébergés avancés
+- Accès temporaire sécurisé à un dossier build/cache pour jobs distants
+
+---
+
+## Démarrage rapide
+
+### 1. Lancez le conteneur NFS+WireGuard côté serveur
+
+```yaml
+# docker-compose.yml
+services:
+  server:
+    image: dbndev/nfs-wireguard-bridge:latest
+    container_name: nfs-wireguard-bridge
+    cap_add:
+      - NET_ADMIN
+    privileged: true
+    network_mode: bridge
+    ports:
+      - "51820:51820/udp"
+    volumes:
+      - /workspaces:/exports/workspaces:rw
+      - /runner:/exports/runner:rw
+      # Optionnel : pont NAS/NFS depuis le host
+      - video-nas:/exports/video:rw
+    environment:
+      - WG_CLIENT_PUBKEY=your_client_pubkey
+      - WG_CLIENT_IP=10.8.0.2
+      - WG_SERVER_PORT=51820
+      # ...autres options
+
+volumes:
+  video-nas:
+    driver: local
+    driver_opts:
+      type: "nfs"
+      o: "addr=nas.local,rw,nfsvers=4"
+      device: ":/volume1/video"
+```
+
+### 2. Configurez votre client WireGuard (macOS/Linux/Win/Android)
+
+Récupérez la config depuis `state/client.conf` ou générez-la vous-même. Exemple :
+
+```ini
+[Interface]
+PrivateKey = ...
+Address = 10.8.0.2/24
+DNS = 1.1.1.1
+
+[Peer]
+PublicKey = ...
+Endpoint = mon-serveur-maison.fr:51820
+AllowedIPs = 0.0.0.0/0
+PersistentKeepalive = 25
+```
+
+### 3. Montez NFS depuis le client distant
+
+```sh
+# macOS (exemple, adaptez le chemin)
+sudo mount -t nfs -o vers=3,rw,resvport 10.8.0.1:/exports/workspaces /private/tmp/testnfs
+
+# Linux
+docker run --rm --cap-add SYS_ADMIN --device /dev/fuse nfs-utils mount -t nfs ...
+```
+
+---
+
+## Architecture
+
+### Pont NFS classique (avec NAS distant)
+
+```mermaid
+flowchart LR
+    ClientVPN["Client (10.8.0.2)"]
+    WGServer["Bridge Container (10.8.0.1)"]
+    NAS["NAS (192.168.50.20)"]
+    ClientVPN -- WireGuard --> WGServer
+    WGServer -- NFS --> NAS
+    NAS -- NFS Reply --> WGServer
+    WGServer -- WireGuard --> ClientVPN
+    subgraph NAT
+        MASQ[IP Masquerading]
+    end
+    WGServer -. "NAT/MASQ" .-> NAS
+```
+
+### Mode NFS embarqué (export direct de volumes locaux)
+
+```mermaid
+flowchart LR
+    ClientVPN["Client (10.8.0.2)"]
+    WGServer["NFS+WG Bridge (10.8.0.1)"]
+    Volume["/workspaces ou /runner"]
+    ClientVPN -- WireGuard + NFS --> WGServer
+    WGServer -- bind-mount --> Volume
+```
+
+---
+
+## Comparaison des modes
+
+| Mode                 | Avantages                                             | Inconvénients                                              |
+|----------------------|------------------------------------------------------|------------------------------------------------------------|
+| **Pont NFS (NAS)**   | - Partage direct d’un NAS distant                    | - Complexité routing/iptables supplémentaire               |
+|                      | - Pas besoin de serveur NFS dans le conteneur        | - Ajoute une couche NAT, peut impacter la performance      |
+|                      | - Fonctionne avec NAS/exports existants              | - L’export NFS doit autoriser l’IP LAN du relay            |
+| **NFS embarqué**     | - NFS direct depuis chemins/volumes locaux           | - Partage seulement les dossiers accessibles du conteneur  |
+|                      | - Pas de NAT, routage simple                         | - Impossible de re-exporter tout NFS amont (root_squash/NAS)|
+|                      | - Plus rapide pour code/CI dev                       | - Nécessite des mounts volumes hôtes                       |
+
+#### Quand utiliser chaque mode ?
+- **NFS embarqué** : partagez directement vos fichiers/volumes réels du serveur/devbox (contrôle total, perf, idéal CI/dev)
+- **Pont/NAS** : vos données sont sur un NAS/NFS que vous ne pouvez pas modifier, ou vous voulez fournir un accès VPN à un NAS
+
+---
+
+## Intégration DockerHub
+
+Build & push automatisé :
+
+```sh
+# Push manuel
+DOCKER_BUILDKIT=1 docker buildx build --platform linux/amd64,linux/arm64 \
+  -t dbndev/nfs-wireguard-bridge:latest --push .
+```
+
+- Voir https://hub.docker.com/r/dbndev/nfs-wireguard-bridge
+- Badge : ![Docker Pulls](https://img.shields.io/docker/pulls/dbndev/nfs-wireguard-bridge)
+- Pour CI/CD : workflows GitHub Actions pour build multiarch et auto-push
+
+---
+
+## Sécurité et bonnes pratiques
+
+- Autorisez uniquement les clés/IP WireGuard de confiance dans les exports
+- N’exposez pas NFS/WireGuard sur le WAN (utilisez firewall, port-knock, reverse proxy…)
+- NFS sur WireGuard est sécurisé mais NFS n’est pas chiffré : **faites confiance à vos pairs**
+- Utilisez all_squash/anonuid pour les partages readonly ou multi-utilisateur
+- Gardez toujours les clés privées secrètes ; ne les commitez jamais
+
+---
+
+## Dépannage
+
+- Si `mount_nfs: ... failed with 2` (No such file or directory) : vérifiez que le chemin exporté existe **dans le conteneur**
+- Si `Permission denied` : vérifiez que l’IP/CIDR dans `/etc/exports` correspond à l’IP VPN du client
+- Pour corriger les erreurs de lock NFSv3 : lancez `rpc.statd --no-notify --port 32765 --outgoing-port 32766` et ouvrez les ports
+- Sur macOS, utilisez toujours `resvport` pour NFS v3
+- Voir `docker logs nfs-wireguard-bridge` pour le debug côté conteneur
+
+---
+
+## Crédits
+
+- David Berichon (@dbndev)
+- ChatGPT & Oboe agent
+- Basé sur Open Source : Debian Linux, WireGuard, nfs-utils
+
+---
+
+## Licence
+
+MIT
