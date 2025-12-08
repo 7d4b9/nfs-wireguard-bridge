@@ -38,6 +38,14 @@ cat > "${WG_DIR}/${WG_IF}.conf" <<EOF
 Address = ${WG_SERVER_IP}/24
 ListenPort = ${WG_PORT}
 PrivateKey = ${SERVER_PRIV_KEY}
+
+# On mappe le réseau distant du VPN 192.168.1.0/24
+# vers un réseau virtuel 10.200.1.0/24
+PostUp = iptables -t nat -A PREROUTING -d 10.200.1.0/24 -j NETMAP --to 192.168.1.0/24
+PostUp = iptables -t nat -A POSTROUTING -s 192.168.1.0/24 -j NETMAP --to 10.200.1.0/24
+PostDown = iptables -t nat -D PREROUTING -d 10.200.1.0/24 -j NETMAP --to 192.168.1.0/24
+PostDown = iptables -t nat -D POSTROUTING -s 192.168.1.0/24 -j NETMAP --to 10.200.1.0/24
+
 PostUp = iptables -t nat -A POSTROUTING -s ${WG_SUBNET}.0/24 -j MASQUERADE
 PostUp = echo 1 > /proc/sys/net/ipv4/ip_forward
 PostDown = iptables -t nat -D POSTROUTING -s ${WG_SUBNET}.0/24 -j MASQUERADE
@@ -65,7 +73,7 @@ WIREGUARD_SERVER_ENDPOINT="${NFS_WIREGUARD_SERVER_HOST:-$(curl -s https://ifconf
 # [Peer]
 # PublicKey = ${SERVER_PUB_KEY}
 # ENDPOINT = ${WIREGUARD_SERVER_ENDPOINT}
-# AllowedIPs = 10.8.0.0/24, 192.168.50.0/24
+# AllowedIPs = 10.8.0.0/24, 192.168.1.0/24
 # PersistentKeepalive = 25
 # EOF
 
@@ -79,7 +87,7 @@ DNS = 1.1.1.1
 [Peer]
 PublicKey = ${SERVER_PUB_KEY}
 ENDPOINT = ${WIREGUARD_SERVER_ENDPOINT}
-AllowedIPs = 10.8.0.0/24, 192.168.50.0/24
+AllowedIPs = 10.8.0.0/24, 192.168.1.0/24
 PersistentKeepalive = 25
 EOF
 
