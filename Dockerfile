@@ -65,6 +65,7 @@ COPY nfs/nfs-start-ganesha.sh /usr/local/bin/
 
 COPY wg-connect.sh /usr/local/bin/wg-connect.sh
 COPY wg-show.sh /usr/local/bin/wg-show.sh
+COPY wg-start.sh /usr/local/bin/wg-start.sh
 
 RUN sudo chmod +x /usr/local/bin/*.sh
 
