@@ -4,7 +4,6 @@ set -euo pipefail
 
 sudo wg show
 
-wg show
 ip a
 ip route
 
@@ -22,11 +21,7 @@ sudo tcpdump -ni wg-pdc-client
 sudo tcpdump -ni eth0
 sudo tcpdump -ni lo
 
-sysctl net.ipv4.ip_forward
-
-iptables -t nat -L -n -v
-iptables -L INPUT -n -v
-iptables -L FORWARD -n -v
+sudo sysctl net.ipv4.ip_forward
 
 # Routes de wg0
 ip route show dev wg0

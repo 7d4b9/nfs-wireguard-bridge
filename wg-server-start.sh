@@ -60,8 +60,8 @@ AllowedIPs = 10.8.0.3/32
 EOF
 
 # --- Lancement de WireGuard ---
-# echo "🟢 Lancement WireGuard serveur"
-# wg-quick up "${WG_IF}"
+echo "🟢 Lancement WireGuard serveur"
+wg-quick up "${WG_IF}"
 
 WIREGUARD_SERVER_ENDPOINT="${NFS_WIREGUARD_SERVER_HOST:-$(curl -s https://ifconfig.me)}:${NFS_WIREGUARD_SERVER_PORT:-${WG_PORT}}"
 
@@ -103,5 +103,8 @@ echo "--------------------------------------------"
 echo "=== READY === (WireGuard) ==="
 
 sudo iptables -L -t nat
+
+# --- Affichage des infos WireGuard ---
+wg-show.sh
 
 sleep infinity

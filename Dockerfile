@@ -63,8 +63,10 @@ COPY nfs/ganesha/ganesha.conf /etc/ganesha/ganesha.conf
 COPY nfs/nfs-start.sh         /usr/local/bin/
 COPY nfs/nfs-start-ganesha.sh /usr/local/bin/
 
-RUN sudo chmod +x /usr/local/bin/*.sh
 COPY wg-connect.sh /usr/local/bin/wg-connect.sh
+COPY wg-show.sh /usr/local/bin/wg-show.sh
+
+RUN sudo chmod +x /usr/local/bin/*.sh
 
 EXPOSE 51820/udp
 
