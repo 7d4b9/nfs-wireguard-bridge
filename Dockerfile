@@ -51,11 +51,6 @@ RUN sudo mkdir -p /etc/wireguard /workspaces /state /runner \
     && sudo chmod 700 /etc/wireguard \
     && sudo chown -R ${non_root_user}:${non_root_user} /workspaces /state /runner
 
-COPY wg-client-connect.sh   /usr/local/bin/
-COPY wg-show.sh             /usr/local/bin/
-COPY entrypoint.sh          /usr/local/bin/
-COPY wg-server-start.sh     /usr/local/bin/
-
 # --- Ganesha configs for GitHub Codespaces ---
 COPY nfs/ganesha/ganesha.conf /etc/ganesha/ganesha.conf
 
@@ -63,9 +58,11 @@ COPY nfs/ganesha/ganesha.conf /etc/ganesha/ganesha.conf
 COPY nfs/nfs-start.sh         /usr/local/bin/
 COPY nfs/nfs-start-ganesha.sh /usr/local/bin/
 
-COPY wg-connect.sh /usr/local/bin/wg-connect.sh
-COPY wg-show.sh /usr/local/bin/wg-show.sh
-COPY wg-start.sh /usr/local/bin/wg-start.sh
+COPY wg-client-connect.sh   /usr/local/bin/
+COPY wg-server-start.sh     /usr/local/bin/
+COPY wg-show.sh             /usr/local/bin/
+
+COPY entrypoint.sh          /usr/local/bin/
 
 RUN sudo chmod +x /usr/local/bin/*.sh
 
