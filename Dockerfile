@@ -52,14 +52,13 @@ RUN sudo mkdir -p /etc/wireguard /workspaces /state /runner \
     && sudo chmod 700 /etc/wireguard \
     && sudo chown -R ${non_root_user}:${non_root_user} /workspaces /state /runner
 
-COPY entrypoint.sh /usr/local/bin/entrypoint.sh
-COPY nfs-start.sh /usr/local/bin/nfs-start.sh
 COPY wg-start.sh /usr/local/bin/wg-start.sh
-RUN sudo chmod +x /usr/local/bin/entrypoint.sh
 COPY wg-connect.sh /usr/local/bin/wg-connect.sh
-RUN sudo chmod +x /usr/local/bin/wg-connect.sh
 COPY wg-show.sh /usr/local/bin/wg-show.sh
-RUN sudo chmod +x /usr/local/bin/wg-show.sh
+COPY nfs-start.sh /usr/local/bin/nfs-start.sh
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+
+RUN sudo chmod +x /usr/local/bin/*.sh
 
 EXPOSE 51820/udp
 
