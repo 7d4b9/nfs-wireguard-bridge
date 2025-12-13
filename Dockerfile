@@ -58,7 +58,9 @@ COPY wg-start.sh /usr/local/bin/wg-start.sh
 RUN sudo chmod +x /usr/local/bin/entrypoint.sh
 COPY wg-connect.sh /usr/local/bin/wg-connect.sh
 RUN sudo chmod +x /usr/local/bin/wg-connect.sh
+COPY wg-show.sh /usr/local/bin/wg-show.sh
+RUN sudo chmod +x /usr/local/bin/wg-show.sh
 
 EXPOSE 51820/udp
 
-ENTRYPOINT ["entrypoint.sh"]   
+ENTRYPOINT ["entrypoint.sh"]
