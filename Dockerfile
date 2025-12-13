@@ -44,7 +44,6 @@ RUN useradd -m ${non_root_user} -u 1000 && echo "${non_root_user}:${non_root_use
     \
     && chown -R ${non_root_user}:${non_root_user} ${HOME}
 
-
 USER ${non_root_user}
 ENV HOME=/home/${non_root_user}
 
@@ -52,11 +51,11 @@ RUN sudo mkdir -p /etc/wireguard /workspaces /state /runner \
     && sudo chmod 700 /etc/wireguard \
     && sudo chown -R ${non_root_user}:${non_root_user} /workspaces /state /runner
 
-COPY wg-start.sh /usr/local/bin/wg-start.sh
-COPY wg-connect.sh /usr/local/bin/wg-connect.sh
-COPY wg-show.sh /usr/local/bin/wg-show.sh
-COPY nfs-start.sh /usr/local/bin/nfs-start.sh
-COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY wg-server-start.sh     /usr/local/bin/
+COPY wg-client-connect.sh   /usr/local/bin/
+COPY wg-show.sh             /usr/local/bin/
+COPY nfs-start.sh           /usr/local/bin/
+COPY entrypoint.sh          /usr/local/bin/
 
 RUN sudo chmod +x /usr/local/bin/*.sh
 

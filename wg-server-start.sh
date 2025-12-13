@@ -101,6 +101,3 @@ echo "Ou scan ce QR code avec l'app WireGuard mobile:"
 qrencode -t ANSIUTF8 < ${STATE_DIR}/macbook.conf || true
 echo "--------------------------------------------"
 echo "=== READY === (WireGuard) ==="
-
-# --- Affichage des infos WireGuard ---
-wg-show.sh

@@ -20,10 +20,14 @@ export WG_SUBNET="10.8.0"
 export WG_SERVER_IP="${WG_SUBNET}.1"
 export WG_CLIENT_IP="${WG_SUBNET}.2"
 
-wg-connect.sh &
+wg-server-start.sh
+
+wg-client-connect.sh &
 bg_pids+=($!)
 
-wg-start.sh
+# --- Affichage des infos WireGuard ---
+sleep 2
+wg-show.sh
 
 nfs-start.sh &
 bg_pids+=($!)
