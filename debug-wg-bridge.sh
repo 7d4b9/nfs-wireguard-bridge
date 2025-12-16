@@ -32,9 +32,9 @@ echo -e "\n=== TEST ICMP (10.8.0.2 et 10.5.5.2) ==="
 ping -c2 10.8.0.2 || echo "Pas de réponse de 10.8.0.2"
 ping -c2 10.5.5.2 || echo "Pas de réponse de 10.5.5.2"
 
-echo -e "\n=== TCPDUMP 10 paquets sur wg0 et wg-pdc-client (10s chaque) ==="
+echo -e "\n=== TCPDUMP 10 paquets sur wg0 et wg-van-client (10s chaque) ==="
 timeout 10 tcpdump -n -i wg0 &
-timeout 10 tcpdump -n -i wg-pdc-client &
+timeout 10 tcpdump -n -i wg-van-client &
 wait
 
 echo -e "\n=== FIN DEBUG BRIDGE ==="

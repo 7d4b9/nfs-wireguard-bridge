@@ -14,8 +14,8 @@ sudo iptables -L FORWARD -n -v
 # Routes de wg0
 ip route show dev wg0
 
-# Routes de wg-pdc-client
-ip route show dev wg-pdc-client
+# Routes de wg-van-client
+ip route show dev wg-van-client
 
 ip route
 

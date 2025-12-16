@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -euo pipefail
+set -euxo pipefail
 
 # Dossier où chercher les configs (priorité à /conf monté, fallback /etc/wireguard)
 WG_CONF_DIR="/conf"

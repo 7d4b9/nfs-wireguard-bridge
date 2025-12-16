@@ -270,7 +270,7 @@ services:
     network_mode: bridge
     ports:
       - "51820:51820/udp"
-      - "51821:51821/udp"
+      - "51820:51820/udp"
     volumes:
       - ./state:/state
       - ./conf:/conf
@@ -281,7 +281,7 @@ services:
       - WG1_PEERS=...
       - WG2_INTERFACE=wg2
       - WG2_PRIVATE_KEY=...
-      - WG2_PORT=51821
+      - WG2_PORT=51820
       - WG2_PEERS=...
 ```
 

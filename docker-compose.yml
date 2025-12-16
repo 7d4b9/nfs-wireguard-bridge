@@ -13,7 +13,7 @@ services:
       - ./state:/state:rw
       - ./conf:/conf:rw
     ports:
-      - "51821:51820/udp"
+      - "51820:51820/udp"
     restart: unless-stopped
     environment:
       - NFS_WIREGUARD_SERVER_PORT=${NFS_WIREGUARD_SERVER_PORT:-51820}
@@ -21,9 +21,9 @@ services:
 
     command: |
       bash -c '
-      # sudo tcpdump -ni wg0 | tee /state/wg0-tcpdump.log &
-      # sudo tcpdump -ni wg-pdc-client | tee /state/wg-pdc-client-tcpdump.log &
-      # sudo tcpdump -ni eth0 | tee /state/eth0-tcpdump.log &
-      # sudo tcpdump -ni lo | tee /state/lo-tcpdump.log &
+      sudo tcpdump -ni wg0 | tee /state/wg0-tcpdump.log &
+      sudo tcpdump -ni wg-van-client | tee /state/wg-van-client-tcpdump.log &
+      sudo tcpdump -ni eth0 | tee /state/eth0-tcpdump.log &
+      sudo tcpdump -ni lo | tee /state/lo-tcpdump.log &
       sleep infinity
       '

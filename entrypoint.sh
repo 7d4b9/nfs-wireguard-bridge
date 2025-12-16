@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -euo pipefail
+set -euxo pipefail
 
 # List to hold background job PIDs
 bg_pids=()
@@ -16,7 +16,7 @@ trap cleanup EXIT
 
 # --- Configuration ---
 export WG_IF="wg0"
-export WG_SUBNET="10.8.0"
+export WG_SUBNET="10.88.0"
 export WG_SERVER_IP="${WG_SUBNET}.1"
 export WG_CLIENT_IP="${WG_SUBNET}.2"
 
@@ -29,8 +29,8 @@ bg_pids+=($!)
 sleep 2
 wg-show.sh
 
-nfs-start.sh &
-bg_pids+=($!)
+# nfs-start.sh &
+# bg_pids+=($!)
 
 if [ $# -eq 0 ]; then
   echo "[entrypoint] No command passed, entering sleep infinity to keep container alive"

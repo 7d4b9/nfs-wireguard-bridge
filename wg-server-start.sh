@@ -19,34 +19,30 @@ if [ ! -f "${STATE_DIR}/server.key" ]; then
     wg genkey | tee "${STATE_DIR}/client.key" | wg pubkey > "${STATE_DIR}/client.pub"
 fi
 
-# --- Clé WireGuard Archer AX55 ---
-if [ ! -f "${STATE_DIR}/ax55.key" ]; then
+# --- Clé WireGuard Bridge ---
+if [ ! -f "${STATE_DIR}/bridge.key" ]; then
     umask 077
-    wg genkey | tee "${STATE_DIR}/ax55.key" | wg pubkey > "${STATE_DIR}/ax55.pub"
+    wg genkey | tee "${STATE_DIR}/bridge.key" | wg pubkey > "${STATE_DIR}/bridge.pub"
 fi
 
-AX55_PRIV_KEY=$(cat "${STATE_DIR}/ax55.key")
-AX55_PUB_KEY=$(cat "${STATE_DIR}/ax55.pub")
+BRIDGE_PRIV_KEY=$(cat "${STATE_DIR}/bridge.key")
+BRIDGE_PUB_KEY=$(cat "${STATE_DIR}/bridge.pub")
 SERVER_PRIV_KEY=$(cat "${STATE_DIR}/server.key")
 SERVER_PUB_KEY=$(cat "${STATE_DIR}/server.pub")
 CLIENT_PRIV_KEY=$(cat "${STATE_DIR}/client.key")
 CLIENT_PUB_KEY=$(cat "${STATE_DIR}/client.pub")
 
-WG_SUBNET_PDC_ARCHER_AX55=10.5.5
-WG_SERVER_IP_PDC_ARCHER_AX55=10.5.5.1
-
 # --- Création du fichier de conf serveur ---
 cat > "${WG_DIR}/${WG_IF}.conf" <<EOF
 [Interface]
 Address = ${WG_SERVER_IP}/24
-# Address = ${WG_SERVER_IP_PDC_ARCHER_AX55}/24
 ListenPort = ${WG_PORT}
 PrivateKey = ${SERVER_PRIV_KEY}
-PostUp = iptables -t nat -A POSTROUTING -s ${WG_SUBNET}.0/24 -j MASQUERADE
-# PostUp = iptables -t nat -A POSTROUTING -s ${WG_SUBNET_PDC_ARCHER_AX55}.0/24 -j MASQUERADE
+# PostUp = iptables -t nat -A POSTROUTING -s ${WG_SUBNET}.0/24 -j MASQUERADE
+PostUp = iptables -t nat -A POSTROUTING -s 0.0.0.0/0 -j MASQUERADE
 PostUp = echo 1 > /proc/sys/net/ipv4/ip_forward
-PostDown = iptables -t nat -D POSTROUTING -s ${WG_SUBNET}.0/24 -j MASQUERADE
-# PostDown = iptables -t nat -D POSTROUTING -s ${WG_SUBNET_PDC_ARCHER_AX55}.0/24 -j MASQUERADE
+# PostDown = iptables -t nat -D POSTROUTING -s ${WG_SUBNET}.0/24 -j MASQUERADE
+PostDown = iptables -t nat -D POSTROUTING -s 0.0.0.0/0 -j MASQUERADE
 
 [Peer]
 # Macbook
@@ -54,9 +50,9 @@ PublicKey = ${CLIENT_PUB_KEY}
 AllowedIPs = ${WG_CLIENT_IP}/32
 
 [Peer]
-# Archer AX55
-PublicKey = ${AX55_PUB_KEY}
-AllowedIPs = 10.8.0.3/32
+# Bridge1
+PublicKey = ${BRIDGE_PUB_KEY}
+AllowedIPs = 10.88.0.3/32
 EOF
 
 # --- Lancement de WireGuard ---
@@ -65,17 +61,17 @@ wg-quick up "${WG_IF}"
 
 WIREGUARD_SERVER_ENDPOINT="${NFS_WIREGUARD_SERVER_HOST:-$(curl -s https://ifconfig.me)}:${NFS_WIREGUARD_SERVER_PORT:-${WG_PORT}}"
 
-# --- Affichage config Archer AX55 ---
-cat > "${STATE_DIR}/ax55-client.conf" <<EOF
+# --- Affichage config Bridge1 ---
+cat > "${STATE_DIR}/bridge-client.conf" <<EOF
 [Interface]
-PrivateKey = ${AX55_PRIV_KEY}
-Address = 10.8.0.3/24
+PrivateKey = ${BRIDGE_PRIV_KEY}
+Address = 10.88.0.3/24
 DNS = 1.1.1.1
 
 [Peer]
 PublicKey = ${SERVER_PUB_KEY}
 ENDPOINT = ${WIREGUARD_SERVER_ENDPOINT}
-AllowedIPs = 10.8.0.0/24, 192.168.50.0/24
+AllowedIPs = 10.88.0.0/24, 192.168.50.0/24
 PersistentKeepalive = 25
 EOF
 
@@ -89,7 +85,7 @@ DNS = 1.1.1.1
 [Peer]
 PublicKey = ${SERVER_PUB_KEY}
 ENDPOINT = ${WIREGUARD_SERVER_ENDPOINT}
-AllowedIPs = 10.8.0.0/24, 192.168.50.0/24
+AllowedIPs = 10.88.0.0/24, 192.168.50.0/24
 PersistentKeepalive = 25
 EOF
 
