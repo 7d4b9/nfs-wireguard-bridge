@@ -28,8 +28,8 @@ cat /etc/resolv.conf || echo "Pas d'accès à resolv.conf"
 echo -e "\n=== TEST CONNEXION INTERNET ==="
 curl -s https://ifconfig.me || echo "curl échoué"
 
-echo -e "\n=== TEST ICMP (10.8.0.2 et 10.5.5.2) ==="
-ping -c2 10.8.0.2 || echo "Pas de réponse de 10.8.0.2"
+echo -e "\n=== TEST ICMP (10.9.0.2 et 10.5.5.2) ==="
+ping -c2 10.9.0.2 || echo "Pas de réponse de 10.9.0.2"
 ping -c2 10.5.5.2 || echo "Pas de réponse de 10.5.5.2"
 
 echo -e "\n=== TCPDUMP 10 paquets sur wg0 et wg-pdc-client (10s chaque) ==="

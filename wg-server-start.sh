@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -euo pipefail
+set -euxo pipefail
 
 # --- Configuration ---
 WG_IF="wg0"
@@ -16,47 +16,40 @@ sudo chown -R devuser:devuser "${WG_DIR}" "${STATE_DIR}"
 if [ ! -f "${STATE_DIR}/server.key" ]; then
     umask 077
     wg genkey | tee "${STATE_DIR}/server.key" | wg pubkey > "${STATE_DIR}/server.pub"
-    wg genkey | tee "${STATE_DIR}/client.key" | wg pubkey > "${STATE_DIR}/client.pub"
+    wg genkey | tee "${STATE_DIR}/client-macbook.key" | wg pubkey > "${STATE_DIR}/client-macbook.pub"
+    wg genkey | tee "${STATE_DIR}/client-iphone6s.key" | wg pubkey > "${STATE_DIR}/client-iphone6s.pub"
 fi
 
-# --- Clé WireGuard Archer AX55 ---
-if [ ! -f "${STATE_DIR}/ax55.key" ]; then
-    umask 077
-    wg genkey | tee "${STATE_DIR}/ax55.key" | wg pubkey > "${STATE_DIR}/ax55.pub"
-fi
-
-AX55_PRIV_KEY=$(cat "${STATE_DIR}/ax55.key")
-AX55_PUB_KEY=$(cat "${STATE_DIR}/ax55.pub")
 SERVER_PRIV_KEY=$(cat "${STATE_DIR}/server.key")
 SERVER_PUB_KEY=$(cat "${STATE_DIR}/server.pub")
-CLIENT_PRIV_KEY=$(cat "${STATE_DIR}/client.key")
-CLIENT_PUB_KEY=$(cat "${STATE_DIR}/client.pub")
 
-WG_SUBNET_PDC_ARCHER_AX55=10.5.5
-WG_SERVER_IP_PDC_ARCHER_AX55=10.5.5.1
+CLIENT_MACBOOK_PRIV_KEY=$(cat "${STATE_DIR}/client-macbook.key")
+CLIENT_MACBOOK_PUB_KEY=$(cat "${STATE_DIR}/client-macbook.pub")
+
+# CLIENT_IPHONE6S_PRIV_KEY=$(cat "${STATE_DIR}/client-iphone6s.key")
+# CLIENT_IPHONE6S_PUB_KEY=$(cat "${STATE_DIR}/client-iphone6s.pub")
 
 # --- Création du fichier de conf serveur ---
 cat > "${WG_DIR}/${WG_IF}.conf" <<EOF
 [Interface]
 Address = ${WG_SERVER_IP}/24
-# Address = ${WG_SERVER_IP_PDC_ARCHER_AX55}/24
 ListenPort = ${WG_PORT}
 PrivateKey = ${SERVER_PRIV_KEY}
 PostUp = iptables -t nat -A POSTROUTING -s ${WG_SUBNET}.0/24 -j MASQUERADE
-# PostUp = iptables -t nat -A POSTROUTING -s ${WG_SUBNET_PDC_ARCHER_AX55}.0/24 -j MASQUERADE
 PostUp = echo 1 > /proc/sys/net/ipv4/ip_forward
 PostDown = iptables -t nat -D POSTROUTING -s ${WG_SUBNET}.0/24 -j MASQUERADE
-# PostDown = iptables -t nat -D POSTROUTING -s ${WG_SUBNET_PDC_ARCHER_AX55}.0/24 -j MASQUERADE
 
 [Peer]
 # Macbook
-PublicKey = ${CLIENT_PUB_KEY}
-AllowedIPs = ${WG_CLIENT_IP}/32
+PublicKey = ${CLIENT_MACBOOK_PUB_KEY}
+AllowedIPs = ${WG_CLIENT_MACBOOK_IP}/32
+PersistentKeepalive = 25
 
-[Peer]
-# Archer AX55
-PublicKey = ${AX55_PUB_KEY}
-AllowedIPs = 10.8.0.3/32
+# [Peer]
+# # iPhone 6s
+# PublicKey = ${CLIENT_IPHONE6S_PUB_KEY}
+# AllowedIPs = ${WG_CLIENT_IPHONE6S_IP}/32
+# PersistentKeepalive = 25
 EOF
 
 # --- Lancement de WireGuard ---
@@ -64,32 +57,19 @@ echo "🟢 Lancement WireGuard serveur"
 wg-quick up "${WG_IF}"
 
 WIREGUARD_SERVER_ENDPOINT="${NFS_WIREGUARD_SERVER_HOST:-$(curl -s https://ifconfig.me)}:${NFS_WIREGUARD_SERVER_PORT:-${WG_PORT}}"
+CODESPACES_DOCKER_SUBNET="172.17.0.0/16"
+echo "🌐 WireGuard endpoint: ${WIREGUARD_SERVER_ENDPOINT}"
 
-# --- Affichage config Archer AX55 ---
-cat > "${STATE_DIR}/ax55-client.conf" <<EOF
-[Interface]
-PrivateKey = ${AX55_PRIV_KEY}
-Address = 10.8.0.3/24
-DNS = 1.1.1.1
-
-[Peer]
-PublicKey = ${SERVER_PUB_KEY}
-ENDPOINT = ${WIREGUARD_SERVER_ENDPOINT}
-AllowedIPs = 10.8.0.0/24, 192.168.50.0/24
-PersistentKeepalive = 25
-EOF
-
-# --- Affichage config client ---
+# --- Affichage config client macbook ---
 cat > "${STATE_DIR}/macbook.conf" <<EOF
 [Interface]
-PrivateKey = ${CLIENT_PRIV_KEY}
-Address = ${WG_CLIENT_IP}/24
-DNS = 1.1.1.1
+PrivateKey = ${CLIENT_MACBOOK_PRIV_KEY}
+Address = ${WG_CLIENT_MACBOOK_IP}/24
 
 [Peer]
 PublicKey = ${SERVER_PUB_KEY}
 ENDPOINT = ${WIREGUARD_SERVER_ENDPOINT}
-AllowedIPs = 10.8.0.0/24, 192.168.50.0/24
+AllowedIPs = ${WG_SUBNET}.0/24, ${CODESPACES_DOCKER_SUBNET}
 PersistentKeepalive = 25
 EOF
 
@@ -100,6 +80,22 @@ echo "  docker cp <container_id>:/state/macbook.conf ./macbook.conf"
 echo "Ou scan ce QR code avec l'app WireGuard mobile:"
 qrencode -t ANSIUTF8 < ${STATE_DIR}/macbook.conf || true
 echo "--------------------------------------------"
+
+# # --- Affichage config client iPhone 6s ---
+# cat > "${STATE_DIR}/iphone6s.conf" <<EOF
+# [Interface]
+# PrivateKey = ${CLIENT_IPHONE6S_PRIV_KEY}
+# Address = ${WG_CLIENT_IPHONE6S_IP}/24
+
+# [Peer]
+# PublicKey = ${SERVER_PUB_KEY}
+# ENDPOINT = ${WIREGUARD_SERVER_ENDPOINT}
+# AllowedIPs = 0.0.0.0/0
+# PersistentKeepalive = 25
+# EOF
+
+echo "--------------------------------------------"
+echo "📋 Configuration WireGuard client prête !"
 echo "=== READY === (WireGuard) ==="
 
 sudo iptables -L -t nat

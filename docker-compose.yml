@@ -8,12 +8,12 @@ services:
       - NET_ADMIN
     network_mode: bridge
     volumes:
-      - /workspaces:/workspaces:rw
-      - /runner:/runner:rw
+      - ${NFS_WIREGUARD_BRIDGE_WORKSPACES:-/workspaces}:/workspaces:rw
+      - ${NFS_WIREGUARD_BRIDGE_GITHUB_ACTIONS_RUNNER_WORK_DIR:-/runner}:/runner:rw
       - ./state:/state:rw
       - ./conf:/conf:rw
     ports:
-      - "51821:51820/udp"
+      - "51820:51820/udp"
     restart: unless-stopped
     environment:
       - NFS_BACKEND=${NFS_BACKEND}
