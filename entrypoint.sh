@@ -21,8 +21,10 @@ export WG_SERVER_IP="${WG_SUBNET}.1"
 export WG_CLIENT_MACBOOK_IP="${WG_SUBNET}.2"
 export WG_CLIENT_IPHONE6S_IP="${WG_SUBNET}.3"
 
+# --- Démarrage du serveur WireGuard ---
 wg-server-start.sh
 
+# --- Démarrage des clients WireGuard ---
 wg-client-connect.sh &
 bg_pids+=($!)
 
@@ -30,8 +32,28 @@ bg_pids+=($!)
 sleep 2
 wg-show.sh
 
-nfs-start.sh &
-bg_pids+=($!)
+# --- Démarrage du serveur NFS ---
+
+NFS_BACKEND="${NFS_BACKEND:-kernel}"
+
+if [[ "${CODESPACES:-}" == "true" ]]; then
+  NFS_BACKEND="ganesha"
+fi
+
+case "$NFS_BACKEND" in
+  ganesha)
+    echo "🌐 Using NFS-Ganesha (userland)"
+    exec sudo -E nfs-start-ganesha.sh &
+    ;;
+  kernel)
+    echo "🖥️ Using kernel NFS server"
+    exec nfs-start.sh
+    ;;
+  *)
+    echo "❌ Unknown NFS_BACKEND=$NFS_BACKEND"
+    exit 1
+    ;;
+esac
 
 if [ $# -eq 0 ]; then
   echo "[entrypoint] No command passed, entering sleep infinity to keep container alive"

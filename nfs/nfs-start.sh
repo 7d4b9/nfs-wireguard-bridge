@@ -16,8 +16,8 @@ sudo mkdir -p /etc/exports.d
 sudo chmod 755 /etc/exports.d
 
 cat | sudo tee /etc/exports.d/wireguard.exports <<EOF
-/workspaces  ${WG_CLIENT_IP}/32(rw,sync,no_subtree_check,all_squash,anonuid=1000,anongid=1000)
-/runner      ${WG_CLIENT_IP}/32(rw,sync,no_subtree_check,no_root_squash)
+/workspaces  ${WG_CLIENT_MACBOOK_IP}/32(rw,sync,no_subtree_check,all_squash,anonuid=1000,anongid=1000)
+/runner      ${WG_CLIENT_MACBOOK_IP}/32(rw,sync,no_subtree_check,no_root_squash)
 EOF
 
 echo 'RPCMOUNTDOPTS="--port 32767"' | sudo tee /etc/default/nfs-kernel-server

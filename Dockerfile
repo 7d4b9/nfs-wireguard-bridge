@@ -20,7 +20,11 @@ RUN apt-get update && apt-get install -y \
     netcat-openbsd \
     nfs-kernel-server \
     procps \
-    qrencode \
+    qrencode \ 
+    nfs-ganesha \
+    nfs-ganesha-vfs \
+    nfs-ganesha-ceph \
+    libntirpc-dev \
     rsync \
     socat \
     sudo \
@@ -61,8 +65,14 @@ COPY nfs/nfs-start-ganesha.sh /usr/local/bin/
 COPY wg-client-connect.sh   /usr/local/bin/
 COPY wg-server-start.sh     /usr/local/bin/
 COPY wg-show.sh             /usr/local/bin/
-
 COPY entrypoint.sh          /usr/local/bin/
+
+# --- Ganesha configs for GitHub Codespaces ---
+COPY nfs/ganesha/ganesha-github-codespaces.conf /etc/ganesha/ganesha-github-codespaces.conf
+
+# --- NFS scripts ---
+COPY nfs/nfs-start.sh         /usr/local/bin/
+COPY nfs/nfs-start-ganesha.sh /usr/local/bin/
 
 RUN sudo chmod +x /usr/local/bin/*.sh
 
