@@ -26,8 +26,8 @@ SERVER_PUB_KEY=$(cat "${STATE_DIR}/server.pub")
 CLIENT_MACBOOK_PRIV_KEY=$(cat "${STATE_DIR}/client-macbook.key")
 CLIENT_MACBOOK_PUB_KEY=$(cat "${STATE_DIR}/client-macbook.pub")
 
-# CLIENT_IPHONE6S_PRIV_KEY=$(cat "${STATE_DIR}/client-iphone6s.key")
-# CLIENT_IPHONE6S_PUB_KEY=$(cat "${STATE_DIR}/client-iphone6s.pub")
+CLIENT_IPHONE6S_PRIV_KEY=$(cat "${STATE_DIR}/client-iphone6s.key")
+CLIENT_IPHONE6S_PUB_KEY=$(cat "${STATE_DIR}/client-iphone6s.pub")
 
 # --- Création du fichier de conf serveur ---
 cat > "${WG_DIR}/${WG_IF}.conf" <<EOF
@@ -45,11 +45,11 @@ PublicKey = ${CLIENT_MACBOOK_PUB_KEY}
 AllowedIPs = ${WG_CLIENT_MACBOOK_IP}/32
 PersistentKeepalive = 25
 
-# [Peer]
-# # iPhone 6s
-# PublicKey = ${CLIENT_IPHONE6S_PUB_KEY}
-# AllowedIPs = ${WG_CLIENT_IPHONE6S_IP}/32
-# PersistentKeepalive = 25
+[Peer]
+# iPhone 6s
+PublicKey = ${CLIENT_IPHONE6S_PUB_KEY}
+AllowedIPs = ${WG_CLIENT_IPHONE6S_IP}/32
+PersistentKeepalive = 25
 EOF
 
 # --- Lancement de WireGuard ---
@@ -57,7 +57,7 @@ echo "🟢 Lancement WireGuard serveur"
 wg-quick up "${WG_IF}"
 
 WIREGUARD_SERVER_ENDPOINT="${NFS_WIREGUARD_SERVER_HOST:-$(curl -s https://ifconfig.me)}:${NFS_WIREGUARD_SERVER_PORT:-${WG_PORT}}"
-CODESPACES_DOCKER_SUBNET="172.17.0.0/16"
+REMOTE_DOCKER_SUBNET="172.17.0.0/16"
 echo "🌐 WireGuard endpoint: ${WIREGUARD_SERVER_ENDPOINT}"
 
 # --- Affichage config client macbook ---
@@ -69,7 +69,7 @@ Address = ${WG_CLIENT_MACBOOK_IP}/24
 [Peer]
 PublicKey = ${SERVER_PUB_KEY}
 ENDPOINT = ${WIREGUARD_SERVER_ENDPOINT}
-AllowedIPs = ${WG_SUBNET}.0/24, ${CODESPACES_DOCKER_SUBNET}
+AllowedIPs = ${WG_SUBNET}.0/24, ${REMOTE_DOCKER_SUBNET}
 PersistentKeepalive = 25
 EOF
 
@@ -82,25 +82,19 @@ qrencode -t ANSIUTF8 < ${STATE_DIR}/macbook.conf || true
 echo "--------------------------------------------"
 
 # # --- Affichage config client iPhone 6s ---
-# cat > "${STATE_DIR}/iphone6s.conf" <<EOF
-# [Interface]
-# PrivateKey = ${CLIENT_IPHONE6S_PRIV_KEY}
-# Address = ${WG_CLIENT_IPHONE6S_IP}/24
+cat > "${STATE_DIR}/iphone6s.conf" <<EOF
+[Interface]
+PrivateKey = ${CLIENT_IPHONE6S_PRIV_KEY}
+Address = ${WG_CLIENT_IPHONE6S_IP}/24
 
-# [Peer]
-# PublicKey = ${SERVER_PUB_KEY}
-# ENDPOINT = ${WIREGUARD_SERVER_ENDPOINT}
-# AllowedIPs = 0.0.0.0/0
-# PersistentKeepalive = 25
-# EOF
+[Peer]
+PublicKey = ${SERVER_PUB_KEY}
+ENDPOINT = ${WIREGUARD_SERVER_ENDPOINT}
+AllowedIPs = 0.0.0.0/0
+PersistentKeepalive = 25
+EOF
 
 echo "--------------------------------------------"
 echo "📋 Configuration WireGuard client prête !"
 echo "=== READY === (WireGuard) ==="
 
-sudo iptables -L -t nat
-
-# --- Affichage des infos WireGuard ---
-wg-show.sh
-
-sleep infinity

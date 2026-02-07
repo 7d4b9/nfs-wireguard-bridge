@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -euo pipefail
+set -exuo pipefail
 
 sudo wg show
 
@@ -15,11 +15,6 @@ sudo sysctl -w net.ipv4.conf.all.rp_filter=0
 sudo sysctl -w net.ipv4.conf.default.rp_filter=0
 sudo sysctl -w net.ipv4.conf.wg0.rp_filter=0
 # etc. (pour toutes les interfaces utilisées)
-
-sudo tcpdump -ni wg0
-sudo tcpdump -ni wg-pdc-client
-sudo tcpdump -ni eth0
-sudo tcpdump -ni lo
 
 sudo sysctl net.ipv4.ip_forward
 

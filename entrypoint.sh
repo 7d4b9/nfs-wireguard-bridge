@@ -16,7 +16,7 @@ trap cleanup EXIT
 
 # --- Configuration ---
 export WG_IF="wg0"
-export WG_SUBNET="10.9.0"
+export WG_SUBNET="10.10.0"
 export WG_SERVER_IP="${WG_SUBNET}.1"
 export WG_CLIENT_MACBOOK_IP="${WG_SUBNET}.2"
 export WG_CLIENT_IPHONE6S_IP="${WG_SUBNET}.3"
