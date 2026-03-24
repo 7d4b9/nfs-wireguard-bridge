@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -euxo pipefail
+set -euo pipefail
 
 # --- Configuration ---
 WG_IF="wg0"
@@ -56,7 +56,7 @@ EOF
 echo "🟢 Lancement WireGuard serveur"
 wg-quick up "${WG_IF}"
 
-WIREGUARD_SERVER_ENDPOINT="${NFS_WIREGUARD_SERVER_HOST:-$(curl -s https://ifconfig.me)}:${NFS_WIREGUARD_SERVER_PORT:-${WG_PORT}}"
+WIREGUARD_SERVER_ENDPOINT="${NFS_WIREGUARD_BRIDGE_SERVER_HOST:-$(curl -s https://ifconfig.me)}:${NFS_WIREGUARD_BRIDGE_SERVER_PORT:-${WG_PORT}}"
 REMOTE_DOCKER_SUBNET="172.17.0.0/16"
 echo "🌐 WireGuard endpoint: ${WIREGUARD_SERVER_ENDPOINT}"
 

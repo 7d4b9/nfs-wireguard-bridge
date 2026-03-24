@@ -181,7 +181,7 @@ volumes:
 
 ## 🔧 Personnalisation / Customization
 
-- Les variables d’environnement `NFS_WIREGUARD_SERVER_HOST` et `NFS_WIREGUARD_SERVER_PORT` sont disponibles dans le `docker-compose.yml`.  
+- Les variables d’environnement `NFS_WIREGUARD_BRIDGE_SERVER_HOST` et `NFS_WIREGUARD_BRIDGE_SERVER_PORT` sont disponibles dans le `docker-compose.yml`.  
 - Pour exposer d’autres dossiers : modifiez la section `volumes:` dans `docker-compose.yml` et ajoutez le chemin dans `/etc/exports` via `entrypoint.sh`.  
 
 ---

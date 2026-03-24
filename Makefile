@@ -1,66 +1,110 @@
+DOCKER_REPOSITORY ?= dbndev
+NFS_WIREGUARD_BRIDGE_SERVER_IMAGE ?= $(DOCKER_REPOSITORY)/nfs-wireguard-bridge
+NFS_WIREGUARD_BRIDGE_SERVER_PORT ?= 51820
+
+include server.mk
+
 export 
 
-REPOSITORY ?= dbndev
-IMAGE := $(REPOSITORY)/nfs-wireguard-bridge
-PWD = $(CURDIR)
+DOCKER_IMAGE_MAKE ?= \
+  build push pull
 
-build:
-	@echo Building image:
-	@docker build -t $(IMAGE) .
-.PHONY: build
+$(DOCKER_IMAGE_MAKE):
+	@$(MAKE) $(@:%=nfs-wireguard-bridge-server-image-%)
+.PHONY: $(DOCKER_IMAGE_MAKE)
 
-push:
-	@echo pushing image:
-	@docker push $(IMAGE)
-.PHONY: push
+DOCKER_CONTAINER_MAKE ?= \
+  up down rm logs logs-f sh
 
-pull:
-	@echo pulling image:
-	@docker pull $(IMAGE)
-.PHONY: pull
+$(DOCKER_CONTAINER_MAKE):
+	@$(MAKE) $(@:%=nfs-wireguard-bridge-server-container-%)
+.PHONY: $(DOCKER_CONTAINER_MAKE)
 
-server-upgrade: build server-down server-up
-.PHONY: server-upgrade
+VPN_BACKBONE ?= 10.5.5
 
-NFS_WIREGUARD_SERVER_HOST ?= 10.5.5.6
-NFS_WIREGUARD_SERVER_PORT ?= 51820
+# Addresses below are used by devices without nfs-wireguard-bridge container
+RESERVED_VPN_BACKBONE_ROUTER_ADDR     ?= $(VPN_BACKBONE).1
+RESERVED_VPN_BACKBONE_PC_LABTOP_ADDR  ?= $(VPN_BACKBONE).4
+RESERVED_VPN_BACKBONE_PC_DESKTOP_ADDR ?= $(VPN_BACKBONE).7
 
-NFS_WIREGUARD_SERVER_DOCKER_COMPOSE = \
-COMPOSE_PROJECT_NAME=nfs-wireguard-bridge \
-docker compose
+DOCKER_COMPOSE = docker compose -f docker-compose.yml
+# ----------------------------------------------
+# #############################################
+# ----------------------------------------------
+# Github Codespaces
+# ----------------------------------------------
+GITHUB_CODESPACES_SERVER_HOST ?= $(VPN_BACKBONE).5
+GITHUB_CODESPACES_SERVER_WG_SUBNET ?= 10.9.0
 
-server-up: server-rm 
-	@echo Launching wireguard NFS bridge server
-	@$(NFS_WIREGUARD_SERVER_DOCKER_COMPOSE) up -d server
-	@echo server is running.
-	@echo use "make server-logs" or "make server-logs-follow" to view server logs
-.PHONY: server-up
+GITHUB_CODESPACES_DOCKER_COMPOSE ?= \
+  $(DOCKER_COMPOSE) -f github-codespaces-docker-compose-override.yml
 
-server-down:
-	@echo Removing NFS server container
-	@$(NFS_WIREGUARD_SERVER_DOCKER_COMPOSE) down server || $(MAKE) server-rm
-.PHONY: server-down
-
-server-rm:
-	@echo Removing NFS server container
-	-$(NFS_WIREGUARD_SERVER_DOCKER_COMPOSE) rm -f -s server
-.PHONY: server-rm
-
-server-up-github-codespaces:
+github-codespaces-up:
 	@echo Launching wireguard NFS bridge server in GitHub Codespaces
-	@NFS_WIREGUARD_BRIDGE_GITHUB_ACTIONS_RUNNER_WORK_DIR=/mnt/data/gha-runner \
-	  $(MAKE) server-up
-.PHONY: server-up-github-codespaces
+	@$(MAKE) up \
+	  NFS_WIREGUARD_BRIDGE_SERVER_DOCKER_COMPOSE=$(GITHUB_CODESPACES_DOCKER_COMPOSE)
+	  NFS_WIREGUARD_BRIDGE_GITHUB_ACTIONS_RUNNER_WORK_DIR=/mnt/data/gha-runner \
+	  NFS_WIREGUARD_BRIDGE_SERVER_HOST=$(GITHUB_CODESPACES_SERVER_HOST) \
+	  NFS_BACKEND=ganesha \
+	  WG_SUBNET=$(GITHUB_CODESPACES_SERVER_WG_SUBNET)
+.PHONY: github-codespaces-up
 
-server-logs:
-	@$(NFS_WIREGUARD_SERVER_DOCKER_COMPOSE) logs server
-.PHONY: server-logs
+github-codespaces-upgrade: build down github-codespaces-up
+.PHONY: github-codespaces-upgrade
+# ----------------------------------------------
+# #############################################
+# ----------------------------------------------
+# GCP Developer VM
+# ----------------------------------------------
+GCP_DEV_SERVER_HOST ?= $(VPN_BACKBONE).6
+GCP_DEV_SERVER_WG_SUBNET ?= 10.7.0
 
-server-logs-follow:
-	@$(NFS_WIREGUARD_SERVER_DOCKER_COMPOSE) logs --follow server
-.PHONY: server-logs-follow
+gcp-dev-up:
+	@echo Launching wireguard NFS bridge server in GCP developer VM
+	@$(MAKE) up \
+	  NFS_WIREGUARD_BRIDGE_SERVER_HOST=$(GCP_DEV_SERVER_HOST) \
+	  NFS_BACKEND=ganesha \
+	  WG_SUBNET=$(GCP_DEV_SERVER_WG_SUBNET)
+.PHONY: gcp-dev-up
 
-server-sh:
-	@echo Launching NFS server shell
-	@$(NFS_WIREGUARD_SERVER_DOCKER_COMPOSE) exec -it server bash
-.PHONY: server-sh
+gcp-dev-upgrade: build down gcp-dev-up
+.PHONY: gcp-dev-upgrade
+# ----------------------------------------------
+# #############################################
+# ----------------------------------------------
+# PC Desktop
+# ----------------------------------------------
+PC_DESKTOP_SERVER_HOST ?= $(VPN_BACKBONE).3
+PC_DESKTOP_SERVER_WG_SUBNET ?= 10.8.0
+
+pc-desktop-up:
+	@echo Launching wireguard NFS bridge server in PC Desktop
+	@$(MAKE) up \
+	  NFS_WIREGUARD_BRIDGE_SERVER_HOST=$(PC_DESKTOP_SERVER_HOST) \
+	  WG_SUBNET=$(PC_DESKTOP_SERVER_WG_SUBNET)
+.PHONY: pc-desktop-up
+
+pc-desktop-upgrade: build down pc-desktop-up
+.PHONY: pc-desktop-upgrade
+# ----------------------------------------------
+# #############################################
+# ----------------------------------------------
+# ----------------------------------------------
+# PC Labtop
+# ----------------------------------------------
+PC_LABTOP_SERVER_HOST ?= $(VPN_BACKBONE).4
+PC_LABTOP_SERVER_WG_SUBNET ?= 10.11.0
+
+pc-labtop-up:
+	@echo Launching wireguard NFS bridge server in PC labtop
+	@$(MAKE) up \
+	  NFS_WIREGUARD_BRIDGE_SERVER_HOST=$(PC_LABTOP_SERVER_HOST) \
+	  WG_SUBNET=$(PC_LABTOP_SERVER_WG_SUBNET) \
+	  NFS_BACKEND=ganesha \
+.PHONY: pc-labtop-up
+
+pc-labtop-upgrade: build down pc-labtop-up
+.PHONY: pc-labtop-upgrade
+# ----------------------------------------------
+# #############################################
+# ----------------------------------------------
