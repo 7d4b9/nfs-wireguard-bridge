@@ -100,7 +100,7 @@ pc-labtop-up:
 	@$(MAKE) up \
 	  NFS_WIREGUARD_BRIDGE_SERVER_HOST=$(PC_LABTOP_SERVER_HOST) \
 	  WG_SUBNET=$(PC_LABTOP_SERVER_WG_SUBNET) \
-	  NFS_BACKEND=ganesha \
+	  NFS_BACKEND=ganesha
 .PHONY: pc-labtop-up
 
 pc-labtop-upgrade: build down pc-labtop-up
